@@ -2,7 +2,7 @@
 	"translatorID": "54af9575-32ed-4bb4-b753-f2a0024ccacd",
 	"label": "parlament.ch Swiss Laws",
 	"creator": "Hans-Peter Oeri",
-	"target": "^https://www\\.parlament\\.ch/(de|fr|it|rm|en)/ratsbetrieb/(suche-curia-vista|amtliches-bulletin/amtliches-bulletin-(die-verhandlungen|die-videos))",
+	"target": "^https://www\\.parlament\\.ch/(de|fr|it|rm|en)/ratsbetrieb/(suche-curia-vista|amtliches-bulletin/amtliches-bulletin-die-verhandlungen)",
 	"minVersion": "3.0",
 	"maxVersion": "",
 	"priority": 100,
@@ -78,14 +78,14 @@ function swissStrToISO(date) {
 }
 
 function getDocData(doc, url) {
-	const pathRegex = new RegExp("^/(de|fr|it|rm|en)/ratsbetrieb/(?:suche-(curia-vista)(/geschaeft)?|amtliches-bulletin/amtliches-bulletin-(die-verhandlungen|die-videos))");
+	const pathRegex = new RegExp("^/(de|fr|it|rm|en)/ratsbetrieb/(?:suche-(curia-vista)(/geschaeft)?|amtliches-bulletin/amtliches-bulletin-die-verhandlungen)");
 	const parts = ZU.parseURL(url);
 
 	let match = parts.pathname.match(pathRegex) || [];
 	return {
 		lang: match[1],
 		type: match[2] === undefined ?
-			(match[4] === "die-verhandlungen" ? "hearing" : "votum") :
+			"hearing" :
 			(match[3] === undefined ? "affair-search" : "affair")
 	}
 }
@@ -136,10 +136,6 @@ function scrapeHearing(doc, url, docData) {
 	}
 
 	item.complete();
-}
-
-function scrapeVotum(doc, url, docData) {
-
 }
 
 function batchAddDOMContributors(item, type, doms) {
@@ -196,7 +192,6 @@ function scrapeBill(doc, url, docData) {
 function scrape(doc, url, docData) {
 	const scrapers = {
 		hearing: scrapeHearing,
-		votum: scrapeVotum,
 		affair: scrapeBill
 	};
 	scrapers[docData.type](doc, url, docData);
@@ -218,7 +213,6 @@ function getSearchResults(doc, url, docData) {
 function detectWeb(doc, url) {
 	const itemTypes = {
 		"hearing": "hearing",
-		"votum": "hearing",
 		"affair": "bill",
 		"affair-search": "multiple"
 	}
@@ -229,12 +223,15 @@ function detectWeb(doc, url) {
 function doWeb(doc, url) {
 	let docData = getDocData(doc, url);
 	if (docData.type === "affair-search") {
-		Zotero.selectItems(getSearchResults(doc, url, docData), function (items) {
-			if (items) ZU.processDocuments(Object.keys(items), function (doc, url) {
-				let docData = getDocData(doc, url);
-				scrape(doc, url, docData);
-			});
-		});
+		// @TODO How do I wait for load completion on each item?
+		// Zotero.selectItems(getSearchResults(doc, url, docData), function (items) {
+		// 	if (items) ZU.processDocuments(Object.keys(items), function (doc, url) {
+		// 		doc.executeOrDelayUntilScriptLoaded( function (){
+		// 			let docData = getDocData(doc, url);
+		// 			scrape(doc, url, docData);
+		// 		}, "sp.js");
+		// 	});
+		// });
 	}
 	else {
 		scrape(doc, url, docData);
